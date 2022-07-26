@@ -17,8 +17,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('scrap_id')->constrained();
             $table->string('title');
-            $table->string('description');
+            $table->string('date');
             $table->string('phone');
+            $table->string('price');
             $table->timestamps();
         });
     }
