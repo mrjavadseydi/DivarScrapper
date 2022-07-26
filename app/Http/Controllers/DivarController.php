@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ScrapeDivarJob;
+use App\Models\Result;
 use App\Models\Scrap;
 use Illuminate\Http\Request;
+use Spatie\SimpleExcel\SimpleExcelWriter;
 
 class DivarController extends Controller
 {
@@ -30,17 +32,31 @@ class DivarController extends Controller
         $scrap_id = $scrap_id->id;
 
         ScrapeDivarJob::dispatch($request->category,$request->page_limit, $request->title, $request->city,$scrap_id);
-//        return redirect()->back();
+        return redirect()->route('result');
 
     }
 
     public function result()
     {
+        $scrapes = Scrap::orderBy('id', 'desc')->get();
+        return view('result',compact('scrapes'));
 
     }
 
     public function download($id)
     {
+        $results = Result::where('scrap_id',$id)->get()->toArray();
 
+        $new_array = [];
+        foreach ($results as $result) {
+            $new_array[] = [
+                'عنوان اگهی' => $result['title'],
+                'مبلغ' => $result['price'],
+                'تاریخ' => $result['date'],
+                'تلفن' => $result['phone'],
+            ];
+        }
+        $writer = SimpleExcelWriter::streamDownload('result.xlsx')
+            ->addRows($new_array);
     }
 }
