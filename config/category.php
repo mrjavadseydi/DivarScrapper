@@ -1,5 +1,6 @@
 <?php
 return[
+    'همه' => 'ROOT',
     'املاک' => 'real-estate',
     'وسایل نقلیه' => 'vehicles',
     'کالای دیجیتال' => 'electronic-devices',

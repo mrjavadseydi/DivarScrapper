@@ -23,6 +23,7 @@ class DivarController extends Controller
             'page_limit' => 'required|numeric',
             'title' => 'required',
             'city' => 'required',
+            'tokens'=>'required'
         ]);
         $scrap_id = Scrap::query()->create([
             'title'=>$request->title,
@@ -31,14 +32,14 @@ class DivarController extends Controller
         ]);
         $scrap_id = $scrap_id->id;
 
-        ScrapeDivarJob::dispatch($request->category,$request->page_limit, $request->title, $request->city,$scrap_id);
+        ScrapeDivarJob::dispatch($request->category,$request->page_limit, $request->title, $request->city,$scrap_id,$request->tokens);
         return redirect()->route('result');
 
     }
 
     public function result()
     {
-        $scrapes = Scrap::orderBy('id', 'desc')->get();
+        $scrapes = Scrap::orderBy('id', 'desc')->paginate(10);
         return view('result',compact('scrapes'));
 
     }
@@ -56,7 +57,7 @@ class DivarController extends Controller
                 'تلفن' => $result['phone'],
             ];
         }
-        $writer = SimpleExcelWriter::streamDownload('result.xlsx')
+       return SimpleExcelWriter::streamDownload('result.xlsx')
             ->addRows($new_array);
     }
 }

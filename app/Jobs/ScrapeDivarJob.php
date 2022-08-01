@@ -16,7 +16,7 @@ class ScrapeDivarJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private $category, $page_limit, $title, $city, $base_url = "https://api.divar.ir/v8/web-search/", $city_id, $last_page;
+    private $category, $page_limit, $title, $city, $base_url = "https://api.divar.ir/v8/web-search/", $city_id, $last_page,$tokens;
     private $scrap_id;
 
     /**
@@ -24,13 +24,14 @@ class ScrapeDivarJob implements ShouldQueue
      *
      * @return void
      */
-    public function __construct($category, $page_limit, $title, $city, $scrap_id)
+    public function __construct($category, $page_limit, $title, $city, $scrap_id,$tokens)
     {
         $this->category = $category;
         $this->page_limit = $page_limit;
         $this->title = $title;
         $this->city = $city;
         $this->scrap_id = $scrap_id;
+        $this->tokens = explode('\n',$tokens);
     }
 
     /**
@@ -45,7 +46,11 @@ class ScrapeDivarJob implements ShouldQueue
 
     private function getDivar()
     {
-        $url = $this->base_url . "/{$this->city}/" . $this->category;
+        if ($this->category!="ROOT"){
+            $url = $this->base_url . "/{$this->city}/" . $this->category;
+        }else{
+            $url = $this->base_url . "{$this->city}/";
+        }
         $headers = config('header');
         $request = Http::withHeaders($headers)->get($url)->json();
         $this->city_id = $request['web_widgets']['post_list'][0]['action_log']['server_side_info']['info']['extra_data']['jli']['cities'][0];
@@ -64,7 +69,7 @@ class ScrapeDivarJob implements ShouldQueue
                 ],
                 'last-post-date' => $this->last_page,
             ];
-            $headers['authorization'] = 'Basic eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiMDkzOTc2ODgxNzQiLCJpc3MiOiJhdXRoIiwiaWF0IjoxNjU4NzAxMDg4LCJleHAiOjE2NTk5OTcwODgsInZlcmlmaWVkX3RpbWUiOjE2NTg3MDEwODgsInVzZXItdHlwZSI6InBlcnNvbmFsIiwidXNlci10eXBlLWZhIjoiXHUwNjdlXHUwNjQ2XHUwNjQ0IFx1MDYzNFx1MDYyZVx1MDYzNVx1MDZjYyIsInNpZCI6IjgyM2IwNWMwLTYxMTAtNDBhZC05NmE2LWU0ZWJlZDk2ZTMyYyJ9.CsUlqPnrWO2qTXutUDUoJHUcvHWq6acLX-vakiuakUo';
+            $headers['authorization'] = $this->tokens[array_rand($this->tokens)];
             $url = $this->base_url . "/{$this->city_id}/" . $this->category;
 
             $request = Http::withHeaders($headers)->asJson()->post($url, $data)->json();
@@ -81,9 +86,20 @@ class ScrapeDivarJob implements ShouldQueue
             $title = $post['data']['title'];
             $price = $post['data']['middle_description_text'];
             $date = $post['data']['bottom_description_text'];
-            if (strpos($title, $this->title) !== false) {
+            $description_request = Http::withHeaders(config('header'))->get("https://api.divar.ir/v8/posts-v2/web/".$uid)->json();
+            $description ='';
+            foreach ($description_request['sections'] as $section) {
+                if ($section['section_name']=="DESCRIPTION"){
+                    foreach ($section['widgets'] as $widget) {
+                        if(isset($widget['data']['text'])){
+                            $description = $widget['data']['text'];
+                        }
+                    }
+                }
+            }
+            if (strpos($title, $this->title) !== false || strpos($description, $this->title) !== false) {
                 $headers = config('header');
-                $headers['authorization'] = 'Basic eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiMDkzOTc2ODgxNzQiLCJpc3MiOiJhdXRoIiwiaWF0IjoxNjU4NzAxMDg4LCJleHAiOjE2NTk5OTcwODgsInZlcmlmaWVkX3RpbWUiOjE2NTg3MDEwODgsInVzZXItdHlwZSI6InBlcnNvbmFsIiwidXNlci10eXBlLWZhIjoiXHUwNjdlXHUwNjQ2XHUwNjQ0IFx1MDYzNFx1MDYyZVx1MDYzNVx1MDZjYyIsInNpZCI6IjgyM2IwNWMwLTYxMTAtNDBhZC05NmE2LWU0ZWJlZDk2ZTMyYyJ9.CsUlqPnrWO2qTXutUDUoJHUcvHWq6acLX-vakiuakUo';
+                $headers['authorization'] =$this->tokens[array_rand($this->tokens)];
                 $data = Http::withHeaders($headers)->get('https://api.divar.ir/v5/posts/' . $uid . '/contact/')->json();
                 $phone = $data['widgets']['contact']['phone'];
                 Result::create([

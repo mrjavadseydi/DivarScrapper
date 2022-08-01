@@ -61,6 +61,7 @@
 
                                     </tbody>
                                 </table>
+                                {{$scrapes->links()}}
                             </div>
                         </div>
                     </div>
