@@ -25,6 +25,9 @@
                                             City
                                         </th>
                                         <th class="px-6 py-2 text-xs text-gray-500">
+                                            Status
+                                        </th>
+                                        <th class="px-6 py-2 text-xs text-gray-500">
                                             Request Date
                                         </th>
 
@@ -46,6 +49,15 @@
                                             </td>
                                             <td class="px-6 py-4">
                                                 <div class="text-sm text-gray-500">{{$scrape->city}}</div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <div class="text-sm text-gray-500">
+                                                    @if($scrape->status==1)
+                                                        done
+                                                    @else
+                                                        in queue
+                                                    @endif
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4 text-sm text-gray-500">
                                                 {{$scrape->created_at}}

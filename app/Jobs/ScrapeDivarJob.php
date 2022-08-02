@@ -3,6 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\Result;
+use App\Models\Scrap;
+use App\Models\User;
+use App\Notifications\ScrapDoneNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,12 +14,13 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class ScrapeDivarJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private $category, $page_limit, $title, $city, $base_url = "https://api.divar.ir/v8/web-search/", $city_id, $last_page,$tokens;
+    private $category, $page_limit, $title, $city, $base_url = "https://api.divar.ir/v8/web-search/", $city_id, $last_page,$tokens,$user_id;
     private $scrap_id;
 
     /**
@@ -24,7 +28,7 @@ class ScrapeDivarJob implements ShouldQueue
      *
      * @return void
      */
-    public function __construct($category, $page_limit, $title, $city, $scrap_id,$tokens)
+    public function __construct($category, $page_limit, $title, $city, $scrap_id,$tokens,$user_id)
     {
         $this->category = $category;
         $this->page_limit = $page_limit;
@@ -32,6 +36,7 @@ class ScrapeDivarJob implements ShouldQueue
         $this->city = $city;
         $this->scrap_id = $scrap_id;
         $this->tokens = explode('\n',$tokens);
+        $this->user_id = $user_id;
     }
 
     /**
@@ -77,6 +82,8 @@ class ScrapeDivarJob implements ShouldQueue
             $this->filters($request);
 
         }
+        Scrap::where('id',$this->scrap_id)->update(['status'=>1]);
+        Notification::send(User::find($this->user_id),new ScrapDoneNotification());
     }
 
     private function filters($arr)
@@ -107,7 +114,8 @@ class ScrapeDivarJob implements ShouldQueue
                     'title' => $title,
                     'date' => $date,
                     'price' => $price,
-                    'phone'=>$phone
+                    'phone'=>$phone,
+                    'description'=>$description,
                 ]);
             }
             $this->last_page = $post['action_log']['server_side_info']['info']['extra_data']['last_post_sort_date'];

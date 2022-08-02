@@ -29,10 +29,11 @@ class DivarController extends Controller
             'title'=>$request->title,
             'city'=>$request->city,
             'category'=>$request->category,
+            'user_id'=>auth()->id()
         ]);
         $scrap_id = $scrap_id->id;
 
-        ScrapeDivarJob::dispatch($request->category,$request->page_limit, $request->title, $request->city,$scrap_id,$request->tokens);
+        ScrapeDivarJob::dispatch($request->category,$request->page_limit, $request->title, $request->city,$scrap_id,$request->tokens,auth()->id());
         return redirect()->route('result');
 
     }
@@ -52,6 +53,7 @@ class DivarController extends Controller
         foreach ($results as $result) {
             $new_array[] = [
                 'عنوان اگهی' => $result['title'],
+                'توضیحات' => $result['description'],
                 'مبلغ' => $result['price'],
                 'تاریخ' => $result['date'],
                 'تلفن' => $result['phone'],
