@@ -32,7 +32,7 @@ class ScrapeDivarJob implements ShouldQueue
     {
         $this->category = $category;
         $this->page_limit = $page_limit;
-        $this->title = $title;
+        $this->title = array_filter(explode(',',$title));
         $this->city = $city;
         $this->scrap_id = $scrap_id;
         $this->tokens = explode('\n',$tokens);
@@ -104,7 +104,7 @@ class ScrapeDivarJob implements ShouldQueue
                     }
                 }
             }
-            if (strpos($title, $this->title) !== false || strpos($description, $this->title) !== false) {
+            if ($this->searchIn($title) !== false ||$this->searchIn($description) !== false) {
                 $headers = config('header');
                 $headers['authorization'] =$this->tokens[array_rand($this->tokens)];
                 $data = Http::withHeaders($headers)->get('https://api.divar.ir/v5/posts/' . $uid . '/contact/')->json();
@@ -121,6 +121,14 @@ class ScrapeDivarJob implements ShouldQueue
             $this->last_page = $post['action_log']['server_side_info']['info']['extra_data']['last_post_sort_date'];
         }
 
+    }
+    function searchIn($text){
+        foreach ($this->title as $title) {
+            if (strpos($text, $title) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
