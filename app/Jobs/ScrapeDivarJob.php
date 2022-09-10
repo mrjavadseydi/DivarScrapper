@@ -32,7 +32,7 @@ class ScrapeDivarJob implements ShouldQueue
     {
         $this->category = $category;
         $this->page_limit = $page_limit;
-        $this->title = array_filter(explode(',',$title));
+        $this->title = array_filter(explode('-',$title));
         $this->city = $city;
         $this->scrap_id = $scrap_id;
         $this->tokens = explode('\n',$tokens);
@@ -59,8 +59,8 @@ class ScrapeDivarJob implements ShouldQueue
         $headers = config('header');
         $request = Http::withHeaders($headers)->get($url)->json();
         $this->city_id = $request['web_widgets']['post_list'][0]['action_log']['server_side_info']['info']['extra_data']['jli']['cities'][0];
-
-        $this->filters($request);
+        FilterPage::dispatch($request, $this->tokens, $this->user_id, $this->scrap_id,$this->title);
+        $this->last_page = $request['web_widgets']['post_list'][0]['action_log']['server_side_info']['info']['extra_data']['last_post_sort_date'];
         for ($i = $this->page_limit; $i > 0; $i--) {
 
             $data = [
@@ -72,64 +72,19 @@ class ScrapeDivarJob implements ShouldQueue
                         $this->city_id,
                     ],
                 ],
-                'last-post-date' => $this->last_page,
+                'last-post-date' => $this->last_page-(100*$i),
             ];
             $headers['authorization'] = $this->tokens[array_rand($this->tokens)];
             $url = $this->base_url . "/{$this->city_id}/" . $this->category;
+            ScrapePage::dispatch($url, $data, $headers, $this->tokens, $this->user_id, $this->scrap_id,$this->title)->delay(now()->addSeconds($i*rand(10,20)));
 
-            $request = Http::withHeaders($headers)->asJson()->post($url, $data)->json();
-
-            $this->filters($request);
 
         }
         Scrap::where('id',$this->scrap_id)->update(['status'=>1]);
         Notification::send(User::find($this->user_id),new ScrapDoneNotification());
     }
 
-    private function filters($arr)
-    {
-        foreach ($arr['web_widgets']['post_list'] as $post) {
-            $uid = $post['data']['action']['payload']['token'];
-            $title = $post['data']['title'];
-            $price = $post['data']['middle_description_text'];
-            $date = $post['data']['bottom_description_text'];
-            $description_request = Http::withHeaders(config('header'))->get("https://api.divar.ir/v8/posts-v2/web/".$uid)->json();
-            $description ='';
-            foreach ($description_request['sections'] as $section) {
-                if ($section['section_name']=="DESCRIPTION"){
-                    foreach ($section['widgets'] as $widget) {
-                        if(isset($widget['data']['text'])){
-                            $description = $widget['data']['text'];
-                        }
-                    }
-                }
-            }
-            if ($this->searchIn($title) !== false ||$this->searchIn($description) !== false) {
-                $headers = config('header');
-                $headers['authorization'] =$this->tokens[array_rand($this->tokens)];
-                $data = Http::withHeaders($headers)->get('https://api.divar.ir/v5/posts/' . $uid . '/contact/')->json();
-                $phone = $data['widgets']['contact']['phone'];
-                Result::create([
-                    'scrap_id' => $this->scrap_id,
-                    'title' => $title,
-                    'date' => $date,
-                    'price' => $price,
-                    'phone'=>$phone,
-                    'description'=>$description,
-                ]);
-            }
-            $this->last_page = $post['action_log']['server_side_info']['info']['extra_data']['last_post_sort_date'];
-        }
 
-    }
-    function searchIn($text){
-        foreach ($this->title as $title) {
-            if (strpos($text, $title) !== false) {
-                return true;
-            }
-        }
-        return false;
-    }
 
 
 }

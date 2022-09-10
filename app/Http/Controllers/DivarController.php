@@ -59,7 +59,9 @@ class DivarController extends Controller
                 'تلفن' => $result['phone'],
             ];
         }
-       return SimpleExcelWriter::streamDownload('result.xlsx')
-            ->addRows($new_array);
+       SimpleExcelWriter::streamDownload('result.csv')
+            ->addRows($new_array)
+           ->toBrowser();;
+//        return redirect()->back();
     }
 }
