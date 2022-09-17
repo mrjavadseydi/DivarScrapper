@@ -25,7 +25,7 @@ class ScrapePost implements ShouldQueue
     {
         $this->tokens = $tokens;
         $this->uid = $uid;
-        $this->scrape_id = $scrape_id;
+        $this->scrap_id = $scrape_id;
         $this->title = $title;
         $this->date = $date;
         $this->price = $price;

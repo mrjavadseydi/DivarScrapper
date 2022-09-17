@@ -50,7 +50,18 @@ class FilterPage implements ShouldQueue
             $date = $post['data']['bottom_description_text'];
             ScrapePost::dispatch($this->tokens,$uid,$this->scrap_id,$title,$date,$price,$this->title)->delay(now()->addSeconds(rand(200,3000)*$i));
             if ($this->searchIn($title) !== false ) {
-                ScrapeContact::dispatch($this->tokens,$uid,$this->scrap_id,$title,$date,$price,"از عنوان")->delay(now()->addSeconds($i*rand(100,200)));
+                $description_request = Http::withHeaders(config('header'))->get("https://api.divar.ir/v8/posts-v2/web/" . $this->uid)->json();
+                $description = '';
+                foreach ($description_request['sections'] as $section) {
+                    if ($section['section_name'] == "DESCRIPTION") {
+                        foreach ($section['widgets'] as $widget) {
+                            if (isset($widget['data']['text'])) {
+                                $description = $widget['data']['text'];
+                            }
+                        }
+                    }
+                }
+                ScrapeContact::dispatch($this->tokens,$uid,$this->scrap_id,$title,$date,$price,$description)->delay(now()->addSeconds($i*rand(100,200)));
             }
         }
     }

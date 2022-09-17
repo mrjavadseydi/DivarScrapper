@@ -24,7 +24,7 @@ class ScrapeContact implements ShouldQueue
     {
         $this->tokens = $tokens;
         $this->uid = $uid;
-        $this->scrape_id = $scrape_id;
+        $this->scrap_id = $scrape_id;
         $this->title = $title;
         $this->date = $date;
         $this->price = $price;
@@ -41,7 +41,7 @@ class ScrapeContact implements ShouldQueue
         $headers = config('header');
         $headers['authorization'] =$this->tokens[array_rand($this->tokens)];
         $data = Http::withHeaders($headers)->get('https://api.divar.ir/v5/posts/' . $this->uid . '/contact/')->json();
-        $phone = $data['widgets']['contact']['phone'];
+        $phone = $data['widget_list'][0]['data']['value'];
         Result::create([
             'scrap_id' => $this->scrap_id,
             'title' => $this->title,
