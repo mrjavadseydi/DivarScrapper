@@ -52,10 +52,11 @@
                                             </td>
                                             <td class="px-6 py-4">
                                                 <div class="text-sm text-gray-500">
-                                                    @if($scrape->status==1)
-                                                        done
-                                                    @else
-                                                        in queue
+{{--                                                    @dd()--}}
+                                                @if(\Illuminate\Support\Facades\Bus::findBatch($scrape->batch))
+                                                    {{\Illuminate\Support\Facades\Bus::findBatch($scrape->batch)->progress()??'0'}}%
+                                                @else
+                                                    not started yet...
                                                     @endif
                                                 </div>
                                             </td>

@@ -29,7 +29,8 @@ class DivarController extends Controller
             'title'=>$request->title,
             'city'=>$request->city,
             'category'=>$request->category,
-            'user_id'=>auth()->id()
+            'user_id'=>auth()->id(),
+            'batch'=>'empty'
         ]);
         $scrap_id = $scrap_id->id;
 
